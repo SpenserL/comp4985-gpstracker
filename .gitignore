@@ -53,7 +53,7 @@ gen-external-apklibs
 .mtj.tmp/
 
 # Package Files #
-*.jar
+# *.jar
 *.war
 *.ear
 
@@ -76,7 +76,7 @@ local.properties
 .recommenders
 
 # Eclipse Core
-.project
+# .project
 
 # External tool builders
 .externalToolBuilders/
