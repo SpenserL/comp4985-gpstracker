@@ -1,7 +1,16 @@
 package main;
 
-import java.net.*;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
 
 public class ServerThread extends Thread {
 	
@@ -12,36 +21,44 @@ public class ServerThread extends Thread {
 	
 	public ServerThread() throws IOException {
 		listenSock = new ServerSocket(LIST_PORT);
-		listenSock.setSoTimeout(20000); // 20 sec
+//		listenSock.setSoTimeout(20000); // 20 sec
 	}
 	
 	public void run() {
+		JSONParser parser = new JSONParser();
+		
 		while (true) {
 			try {
 				// listen for and accept new connections
-				System.out.println("\nListening on port: " + listenSock.getLocalPort());
 				Socket clientSock = listenSock.accept();
-				System.out.println("\nConnection from : " + clientSock.getRemoteSocketAddress());
+				String clientIp = clientSock.getRemoteSocketAddress().toString();
 				
 				// get incoming data string
 				DataInputStream in = new DataInputStream(clientSock.getInputStream());
 				retMsg = in.readUTF();
-				System.out.println("\n" + retMsg + "\n");
 				
-//				if (Server.writeToDB()) {
-//					System.out.println("Success!");
-//				} else {
-//					System.out.println("Failed...");
-//				}
+				Object obj = parser.parse(retMsg);
+				JSONObject jsonobj = (JSONObject)obj;
 				
-				// echo retMsg back to client
-				// DataOutputStream out = new DataOutputStream(clientSock.getOutputStream());
-				// out.writeUTF(retMsg + clientSock.getLocalSocketAddress());
+				clientIp = clientIp.substring(1, clientIp.indexOf(':'));
+				
+				String ip 			= clientIp;
+				String name 		= jsonobj.get("name").toString();
+				String deviceId 	= jsonobj.get("deviceId").toString();
+				String deviceName 	= jsonobj.get("deviceName").toString();
+				String latitude 	= jsonobj.get("latitude").toString();
+				String longitude 	= jsonobj.get("longitude").toString();
+				
+				// write to DB here
+				if (!latitude.equalsIgnoreCase("---") && !longitude.equalsIgnoreCase("---")) {
+					Server.writeToDB(name, ip, deviceName, deviceId, latitude, longitude);
+				}
+				
 				clientSock.close();
 			} catch (SocketTimeoutException s) {
-				System.out.println("Socket timed out!");
+				System.out.println(Server.getDateTime() + " socket timeout");
 				break;
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 				break;
 			}
