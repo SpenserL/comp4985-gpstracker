@@ -9,6 +9,8 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.Property;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -122,6 +125,15 @@ public class MainActivity extends AppCompatActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null) { // connected to WIFI
+            if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+        }
+
         return true;
     }
 
@@ -181,6 +193,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendToServer() {
         String ip = ((EditText)findViewById(R.id.ipValue)).getText().toString();
+        if (ip.isEmpty()) {
+            Toast.makeText(MainActivity.this, "Enter an IP address!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String name = getName();
 
         if (name.isEmpty()) {
@@ -252,6 +268,8 @@ public class MainActivity extends AppCompatActivity {
 
                 return "Connected";
             } catch (ConnectException ce) {
+                Log.d("ConnEx", "ConnnectException Thrown");
+                ce.printStackTrace();
                 return "Server Unavailable";
             } catch (Exception e) {
                 e.printStackTrace();
