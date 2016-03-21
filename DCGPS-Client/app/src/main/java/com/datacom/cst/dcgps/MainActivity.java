@@ -17,6 +17,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.Property;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -121,6 +122,15 @@ public class MainActivity extends AppCompatActivity {
         locationListener = new MyLocationListener();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+
+        /*if (location == null) {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
+            location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            if (location == null) {
+                Toast.makeText(MainActivity.this, "Unable to acquire location", Toast.LENGTH_LONG).show();
+            }
+        }*/
 
         return true;
     }
