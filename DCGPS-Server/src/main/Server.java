@@ -3,6 +3,7 @@ package main;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
@@ -41,13 +42,35 @@ public class Server {
 	public static boolean writeToDB(String user, String ip, String deviceName, String deviceId, String latitude, String longitude) {
 		Connection conn = null;
 		Statement stmt = null;
+		ResultSet result = null;
 		try {
 			// TODO: print error messages...
 			
 			conn = DriverManager.getConnection(DB_URL, USER, PASS);
 			stmt = conn.createStatement();
+			
+			String sql = "SELECT COUNT(`username`) AS rowcount FROM clientposition WHERE `datetime` = NOW()";
+			
+			result = stmt.executeQuery(sql);
+			
+			// don't insert if identical time stamp
+			result.next();
+		    if (result.getInt("rowcount") > 0) {
+		    	return false;
+		    }
+			
+			sql = "SELECT COUNT(`username`) AS rowcount FROM clientposition WHERE `username` = "
+					+ "'" + user + "' AND `latitude` = " + latitude + " AND `longitude` = " + longitude;
+			
+			result = stmt.executeQuery(sql);
+			
+			// don't insert if identical location
+			result.next();
+		    if (result.getInt("rowcount") > 0) {
+		    	return false;
+		    }
 
-			String sql = "INSERT INTO `clientposition` "
+			sql = "INSERT INTO `clientposition` "
 					+ "(`username`, `datetime`, `ip`, `deviceName`, `deviceId`, `latitude`, `longitude`) "
 					+ "VALUES ('" + user + "', CURRENT_TIMESTAMP, '" + ip + "', '" + deviceName + "', '" 
 					+ deviceId + "', '" + latitude + "', '" + longitude + "');";
