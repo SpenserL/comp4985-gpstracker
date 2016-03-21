@@ -12,6 +12,8 @@
 # Java class files
 *.class
 *.classpath
+.classpath
+DCGPS-Server/.classpath
 
 # Generated files
 bin/
