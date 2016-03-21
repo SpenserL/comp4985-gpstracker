@@ -22,6 +22,21 @@ public class Server {
 	
 	static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss");
 
+    /**
+     * METHOD: main
+     *
+     * INTERFACE: void main(String[] args
+     *
+     * DATE: March 20th, 2016
+     *
+     * REVISIONS: March 20th, 2016
+     *
+     * @programmer: Spenser Lee
+     *
+     * @designer: Spenser Lee
+     *
+     * NOTES: Entry point of program
+     */
 	public static void main(String[] args) {
 		
 		System.out.println(Server.getDateTime() + "server started:" + ServerThread.LIST_PORT);
@@ -33,12 +48,41 @@ public class Server {
 			e.printStackTrace();
 		}
 	}
-	
+    /**
+     * METHOD: getDateTime
+     *
+     * INTERFACE: String getDateTime()
+     *
+     * DATE: March 20th, 2016
+     *
+     * REVISIONS: March 20th, 2016
+     *
+     * @programmer: Spenser Lee
+     *
+     * @designer: Spenser Lee
+     *
+     * NOTES: Get current time string.
+     */
 	public static String getDateTime() {
 		Date date = new Date();
 		return "[" + DATE_FORMAT.format(date) + "] ";
 	}
 	
+    /**
+     * METHOD: writeToDB
+     *
+     * INTERFACE: writeToDB(String user, String ip, String deviceName, String deviceId, String latitude, String longitude)
+     *
+     * DATE: March 20th, 2016
+     *
+     * REVISIONS: March 20th, 2016
+     *
+     * @programmer: Spenser Lee
+     *
+     * @designer: Spenser Lee
+     *
+     * NOTES: Writes the client position to DB.
+     */
 	public static boolean writeToDB(String user, String ip, String deviceName, String deviceId, String latitude, String longitude) {
 		Connection conn = null;
 		Statement stmt = null;

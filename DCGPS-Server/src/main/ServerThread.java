@@ -22,6 +22,21 @@ public class ServerThread extends Thread {
 //		listenSock.setSoTimeout(20000); // 20 sec
 	}
 	
+    /**
+     * METHOD: run
+     *
+     * INTERFACE: void run()
+     *
+     * DATE: March 20th, 2016
+     *
+     * REVISIONS: March 20th, 2016
+     *
+     * @programmer: Spenser Lee
+     *
+     * @designer: Spenser Lee
+     *
+     * NOTES: Thread function to process incoming client connections.
+     */
 	public void run() {
 		JSONParser parser = new JSONParser();
 		
