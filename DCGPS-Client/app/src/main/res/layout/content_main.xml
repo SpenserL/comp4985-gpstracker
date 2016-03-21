@@ -31,7 +31,7 @@
         android:layout_below="@+id/ipValue"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:hint="Nickname" />
+        android:hint="Username" />
 
     <Button
         android:layout_width="wrap_content"
@@ -42,7 +42,7 @@
         android:layout_below="@+id/longText"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:onClick="connectToServer" />
+        android:onClick="connectBtn" />
 
     <Button
         android:layout_width="wrap_content"
@@ -52,7 +52,7 @@
         android:layout_below="@+id/connectBtn"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:onClick="disconnectFromServer" />
+        android:onClick="disconnectPress" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -78,7 +78,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="NULL"
+        android:text="---"
         android:id="@+id/latValue"
         android:layout_marginStart="30dp"
         android:layout_alignTop="@+id/latText"
@@ -88,7 +88,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="NULL"
+        android:text="---"
         android:id="@+id/longValue"
         android:layout_alignBottom="@+id/longText"
         android:layout_alignStart="@+id/latValue" />

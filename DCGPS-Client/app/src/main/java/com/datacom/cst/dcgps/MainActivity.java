@@ -26,17 +26,24 @@ import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MY_PERMISSION_ACCESS_COARSE_LOCATION = 11;
-    private static final int MY_PERMISSION_ACCESS_FINE_LOCATION = 12;
+    private static final int LOCATION_REFRESH = 5000; // 5 sec
+    private static final int LOCATION_RANGE = 15; // 15 meters
 
     private static final int PORT = 4985;
     private static String deviceId;
+    private static String deviceName = Build.MODEL;
+
     private LocationManager locationManager = null;
     private LocationListener locationListener = null;
+    private Location location = null;
+
+    private static String latitude = "Calculating...";
+    private static String longitude = "Calculating...";
 
     protected ConnectTask task;
 
@@ -48,10 +55,17 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+
         ((TextView)findViewById(R.id.deviceValue)).setText(deviceId);
-        ((TextView)findViewById(R.id.devNameValue)).setText(Build.MODEL);
+        ((TextView)findViewById(R.id.devNameValue)).setText(deviceName);
 
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        disconnect();
     }
 
     @Override
@@ -76,9 +90,92 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public boolean initLocationServices() {
+
+        // check if permissions are granted
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            // if not, ask for permission
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},
+                    0
+            );
+            return false;
+        }
+
+        locationListener = new MyLocationListener();
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
+        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+        // for testing
+//        location = new Location("dummymanager");
+//        location.setLatitude(48.5000);
+//        location.setLongitude(-122.5000);
+        return  true;
+    }
+
+    public String getName() {
+        String name =((EditText)findViewById(R.id.nameValue)).getText().toString();
+        if (name.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "Enter a username!", Toast.LENGTH_LONG).show();
+            return "";
+        }
+        return name;
+    }
+
+    public void updateLocationUI() {
+        latitude = String.valueOf(location.getLatitude());
+        longitude = String.valueOf(location.getLongitude());
+        ((TextView)findViewById(R.id.latValue)).setText(latitude);
+        ((TextView)findViewById(R.id.longValue)).setText(longitude);
+    }
+
+    public void sendToServer() {
+        String ip = ((EditText)findViewById(R.id.ipValue)).getText().toString();
+        String name = getName();
+
+        if (name.isEmpty()) {
+            return;
+        }
+
+        task = new ConnectTask();
+        task.execute(ip, name, deviceId, deviceName, latitude, longitude);
+    }
+
+    public void connectBtn(View view) {
+        if (locationListener == null) {
+            if (!initLocationServices()) {
+                return;
+            }
+        }
+        updateLocationUI();
+        sendToServer();
+    }
+
+    public void disconnect() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (locationManager != null && locationListener != null) {
+                locationManager.removeUpdates(locationListener);
+            }
+            locationListener = null;
+        }
+        ((TextView)findViewById(R.id.statusValue)).setText("Disconnected");
+        ((TextView)findViewById(R.id.latValue)).setText("---");
+        ((TextView)findViewById(R.id.longValue)).setText("---");
+    }
+
+    public void disconnectPress(View view) {
+        task.cancel(true);
+        // check if permissions are granted
+        disconnect();
+    }
+
     private class ConnectTask extends AsyncTask<String, Void, String> {
 
-        private Socket client;
+        private Socket client = null;
 
         protected String doInBackground(String... args) {
 
@@ -90,7 +187,6 @@ public class MainActivity extends AppCompatActivity {
                 DataOutputStream out = new DataOutputStream(os);
 
                 String jsonMsg = new JSONObject()
-                        .put("ip", client.getRemoteSocketAddress().toString())
                         .put("name", args[1])
                         .put("deviceId", args[2])
                         .put("deviceName", args[3])
@@ -99,83 +195,41 @@ public class MainActivity extends AppCompatActivity {
 
                 out.writeUTF(jsonMsg);
 
-                client.close();
+                if (isCancelled() && client != null) {
+                    client.close();
+                }
 
                 return "Connected";
+            } catch (ConnectException ce) {
+                return "Server Unavailable";
             } catch (Exception e) {
                 e.printStackTrace();
                 return "Error";
             }
         }
         protected void onPostExecute(String recmsg) {
-//            try {
-//                client.close();
-//
-            ((TextView)findViewById(R.id.statusValue)).setText(recmsg);
-//
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
+
+            try {
+                ((TextView)findViewById(R.id.statusValue)).setText(recmsg);
+
+                if (client != null) {
+                    client.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public String getName() {
-        String name =((EditText)findViewById(R.id.nameValue)).getText().toString();
-        if (name == "") {
-            Toast.makeText(getApplicationContext(), "Enter a nickname!", Toast.LENGTH_LONG);
-            return null;
-        }
-        return name;
-    }
-
-    public void connectToServer(View view) {
-        String ip = ((EditText)findViewById(R.id.ipValue)).getText().toString();
-        String name;
-        if ((name = getName()) == null) {
-            return;
-        }
-
-        locationListener = new MyLocationListener();
-
-        // check if permissions are granted
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            // if not, ask for permission
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSION_ACCESS_COARSE_LOCATION);
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.ACCESS_FINE_LOCATION }, MY_PERMISSION_ACCESS_FINE_LOCATION);
-            return;
-        }
-
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 15, locationListener);
-
-        Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-        String devId = deviceId;
-        String devName = Build.MODEL;
-        String latitude = String.valueOf(loc.getLatitude());
-        String longitude = String.valueOf(loc.getLatitude());
-
-        task = new ConnectTask();
-        task.execute(ip, name, devId, devName, latitude, longitude);
-    }
-
-    public void disconnectFromServer(View view) {
-        task.cancel(true);
-        ((TextView)findViewById(R.id.statusValue)).setText("Disconnected");
-    }
 
     private class MyLocationListener implements LocationListener {
 
         @Override
-        public void onLocationChanged(Location location) {
-            String longitude = "Longitude: " + location.getLongitude();
-            Log.v("FUCK", longitude);
-            String latitude = "Latitude: " + location.getLatitude();
-            Log.v("FUCK", latitude);
-
-            ((TextView)findViewById(R.id.latValue)).setText(latitude);
-            ((TextView)findViewById(R.id.longValue)).setText(longitude);
+        public void onLocationChanged(Location loc) {
+            location.setLatitude(loc.getLatitude());
+            location.setLongitude(loc.getLongitude());
+            updateLocationUI();
+            sendToServer();
         }
 
         @Override
