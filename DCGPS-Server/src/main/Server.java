@@ -55,6 +55,8 @@ public class Server {
 					
 			// for log file
 			System.out.println(getDateTime() + user + ":" + ip + ":" + deviceId + ":" + latitude + ":" + longitude);
+			
+			//TODO: catch MySQLIntegrityConstraintViolationException duplicates
 
 		} catch (SQLException se) {
 			// Handle errors for JDBC
