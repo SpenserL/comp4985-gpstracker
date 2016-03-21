@@ -9,6 +9,8 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -123,14 +125,14 @@ public class MainActivity extends AppCompatActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-
-        /*if (location == null) {
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
-            location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location == null) {
-                Toast.makeText(MainActivity.this, "Unable to acquire location", Toast.LENGTH_LONG).show();
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null) { // connected to WIFI
+            if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             }
-        }*/
+        }
 
         return true;
     }
@@ -262,6 +264,8 @@ public class MainActivity extends AppCompatActivity {
 
                 return "Connected";
             } catch (ConnectException ce) {
+                Log.d("ConnEx", "ConnnectException Thrown");
+                ce.printStackTrace();
                 return "Server Unavailable";
             } catch (Exception e) {
                 e.printStackTrace();
