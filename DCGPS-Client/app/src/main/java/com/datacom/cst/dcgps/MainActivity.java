@@ -1,8 +1,11 @@
 package com.datacom.cst.dcgps;
 
 import android.Manifest;
+import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,10 +17,11 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.util.Property;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,6 +32,7 @@ import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,12 +43,15 @@ public class MainActivity extends AppCompatActivity {
     private static String deviceId;
     private static String deviceName = Build.MODEL;
 
+    private static ArrayList<String> users = new ArrayList<String>();
+
+    private static boolean connected = false;
     private LocationManager locationManager = null;
     private LocationListener locationListener = null;
     private Location location = null;
 
-    private static String latitude = "Calculating...";
-    private static String longitude = "Calculating...";
+    private static String latitude = "---";
+    private static String longitude = "---";
 
     protected ConnectTask task;
 
@@ -55,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         deviceId = Secure.getString(this.getContentResolver(), Secure.ANDROID_ID);
+        users.add("aabdulla");
+        users.add("croscoe");
+        users.add("mwillems");
+        users.add("slee");
+        users.add("tyu");
 
         ((TextView)findViewById(R.id.deviceValue)).setText(deviceId);
         ((TextView)findViewById(R.id.devNameValue)).setText(deviceName);
@@ -109,27 +122,61 @@ public class MainActivity extends AppCompatActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH, LOCATION_RANGE, locationListener);
         location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-        // for testing
-//        location = new Location("dummymanager");
-//        location.setLatitude(48.5000);
-//        location.setLongitude(-122.5000);
-        return  true;
+        return true;
     }
 
     public String getName() {
-        String name =((EditText)findViewById(R.id.nameValue)).getText().toString();
+        String name =((EditText)findViewById(R.id.nameValue)).getText().toString().toLowerCase();
         if (name.isEmpty()) {
             Toast.makeText(getApplicationContext(), "Enter a username!", Toast.LENGTH_LONG).show();
+            return "";
+        } else if (!users.contains(name)) {
+            Toast.makeText(getApplicationContext(), "User not found!", Toast.LENGTH_LONG).show();
             return "";
         }
         return name;
     }
 
     public void updateLocationUI() {
+        if (location == null) {
+            return;
+        }
+
         latitude = String.valueOf(location.getLatitude());
         longitude = String.valueOf(location.getLongitude());
         ((TextView)findViewById(R.id.latValue)).setText(latitude);
         ((TextView)findViewById(R.id.longValue)).setText(longitude);
+
+        final TextView latView = (TextView) findViewById(R.id.latValue);
+        final TextView lonView = (TextView) findViewById(R.id.longValue);
+        latView.setTextColor(Color.GREEN);
+        lonView.setTextColor(Color.GREEN);
+
+        final Property<TextView, Integer> property = new Property<TextView, Integer>(int.class, "textColor") {
+            @Override
+            public Integer get(TextView object) {
+                return object.getCurrentTextColor();
+            }
+
+            @Override
+            public void set(TextView object, Integer value) {
+                object.setTextColor(value);
+            }
+        };
+
+        final ObjectAnimator latAnimator = ObjectAnimator.ofInt(latView, property, Color.GRAY);
+        final ObjectAnimator lonAnimator = ObjectAnimator.ofInt(lonView, property, Color.GRAY);
+
+
+        latAnimator.setDuration(3000L);
+        latAnimator.setEvaluator(new ArgbEvaluator());
+        latAnimator.setInterpolator(new DecelerateInterpolator(2));
+        lonAnimator.setDuration(3000L);
+        lonAnimator.setEvaluator(new ArgbEvaluator());
+        lonAnimator.setInterpolator(new DecelerateInterpolator(2));
+
+        latAnimator.start();
+        lonAnimator.start();
     }
 
     public void sendToServer() {
@@ -142,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
 
         task = new ConnectTask();
         task.execute(ip, name, deviceId, deviceName, latitude, longitude);
+        connected = true;
     }
 
     public void connectBtn(View view) {
@@ -168,7 +216,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void disconnectPress(View view) {
-        task.cancel(true);
+        if (connected) {
+            task.cancel(true);
+            connected = false;
+        }
         // check if permissions are granted
         disconnect();
     }
