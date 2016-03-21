@@ -195,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         String ip = ((EditText)findViewById(R.id.ipValue)).getText().toString();
         if (ip.isEmpty()) {
             Toast.makeText(MainActivity.this, "Enter an IP address!", Toast.LENGTH_SHORT).show();
+            return;
         }
         String name = getName();
 
